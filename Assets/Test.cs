@@ -67,19 +67,44 @@ public class Test : MonoBehaviour
                 string code = www.downloadHandler.text.Substring(ix + toBeSearched.Length);
                 string[] lines = code.Split(new[] { "ChapterContent_p__dVKHb" }, StringSplitOptions.None);
                 lines[^1] = lines[^1].Split(new[] { "</div>" }, StringSplitOptions.None)[0];
+
+
                 // do something here
                 Debug.Log("GetText");
                 foreach (string line in lines)
                 {
                     //// Show results as text
-                    Debug.Log(line);
+                    //Debug.Log(line);
                 }
+
+                string chaptCode = "JHN.1";
+                string verse = "";
+                int numberOfchecks = 0;
+                foreach (string line in lines)
+                {
+                    numberOfchecks = 0;
+
+                    for (int i = 0; i < 6; i++) // next 5 verses
+                    {
+                        if(line.IndexOf(chaptCode + "." + i.ToString()) == -1)
+                        {
+                            numberOfchecks++;
+                            continue; //next chapter doesnt exsist
+                        }
+
+                        if (i != 0) { verse += " "; } // add space inbetween each verse
+                        verse += HTMLToText(line);
+                    }
+
+                    if (numberOfchecks == 5) { break; } //stop check paragraphs if there is no more matches
+                }
+
+                m_Text.text = verse;
+                Debug.Log(verse);
             }
 
             //// Or retrieve results as binary data
             //byte[] results = www.downloadHandler.data;
-
-            //m_Text.text = Regex.Replace(www.downloadHandler.text, "<.*?>", String.Empty)[10..];
         }
     }
 
@@ -94,6 +119,10 @@ public class Test : MonoBehaviour
         // Remove HEAD tag  
         HTMLCode = Regex.Replace(HTMLCode, "<head.*?</head>", ""
                             , RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        //Remove div
+        //HTMLCode = Regex.Replace(HTMLCode, "\">", "");
+        HTMLCode = Regex.Replace(HTMLCode, "=\"", "");
+        HTMLCode = Regex.Replace(HTMLCode, "<div class", "");
         // Remove any JavaScript  
         HTMLCode = Regex.Replace(HTMLCode, "<script.*?</script>", ""
           , RegexOptions.IgnoreCase | RegexOptions.Singleline);
