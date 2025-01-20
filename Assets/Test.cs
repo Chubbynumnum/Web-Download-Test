@@ -59,13 +59,13 @@ public class Test : MonoBehaviour
         }
         else
         {
-            string toBeSearched = "ChapterContent_p__dVKHb";
+            string toBeSearched = "<div class=\"ChapterContent_p__dVKHb\">";
             int ix = www.downloadHandler.text.IndexOf(toBeSearched);
 
             if (ix != -1)
             {
                 string code = www.downloadHandler.text.Substring(ix + toBeSearched.Length);
-                string[] lines = code.Split(new[] { "ChapterContent_p__dVKHb" }, StringSplitOptions.None);
+                string[] lines = code.Split(new[] { toBeSearched }, StringSplitOptions.None);
                 lines[^1] = lines[^1].Split(new[] { "</div>" }, StringSplitOptions.None)[0];
 
 
@@ -79,28 +79,30 @@ public class Test : MonoBehaviour
 
                 string chaptCode = "JHN.1";
                 string verse = "";
-                int numberOfchecks = 0;
+                
                 foreach (string line in lines)
                 {
-                    numberOfchecks = 0;
+                    int numberOfchecks = 0;
 
                     for (int i = 0; i < 6; i++) // next 5 verses
                     {
-                        if(line.IndexOf(chaptCode + "." + i.ToString()) == -1)
+                        string verseSpan = String.Format("<span data-usfm=\"{0}.{1}\" class=\"ChapterContent_verse__57FIw\">", chaptCode, i);
+                        if (line.IndexOf(verseSpan) == -1)
                         {
                             numberOfchecks++;
+                            Debug.Log(verseSpan);
                             continue; //next chapter doesnt exsist
                         }
 
                         if (i != 0) { verse += " "; } // add space inbetween each verse
-                        verse += HTMLToText(line);
+                        verse += HTMLToText(line.Split(verseSpan)[0]);
                     }
 
                     if (numberOfchecks == 5) { break; } //stop check paragraphs if there is no more matches
                 }
 
                 m_Text.text = verse;
-                Debug.Log(verse);
+                //Debug.Log(verse);
             }
 
             //// Or retrieve results as binary data
@@ -121,8 +123,8 @@ public class Test : MonoBehaviour
                             , RegexOptions.IgnoreCase | RegexOptions.Singleline);
         //Remove div
         //HTMLCode = Regex.Replace(HTMLCode, "\">", "");
-        HTMLCode = Regex.Replace(HTMLCode, "=\"", "");
-        HTMLCode = Regex.Replace(HTMLCode, "<div class", "");
+        //HTMLCode = Regex.Replace(HTMLCode, "=\"", "");
+        //HTMLCode = Regex.Replace(HTMLCode, "<div class", "");
         // Remove any JavaScript  
         HTMLCode = Regex.Replace(HTMLCode, "<script.*?</script>", ""
           , RegexOptions.IgnoreCase | RegexOptions.Singleline);
