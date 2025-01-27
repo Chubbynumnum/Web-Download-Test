@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -71,43 +72,66 @@ public class Test : MonoBehaviour
 
                 // do something here
                 Debug.Log("GetText");
-                foreach (string line in lines)
-                {
-                    //// Show results as text
-                    //Debug.Log(line);
-                }
+                //foreach (string line in lines)
+                //{
+                //    // Show results as text
+                //    Debug.Log(line);
+                //}
 
                 string chaptCode = "JHN.1";
-                string verse = "";
-                
+                List<string> versesAdded = new();
+                int max = 10;
+
                 foreach (string line in lines)
                 {
                     int numberOfchecks = 0;
 
-                    for (int i = 0; i < 6; i++) // next 5 verses
+                    for (int i = 0; i < max; i++) // next 4 verses
                     {
                         string verseSpan = String.Format("<span data-usfm=\"{0}.{1}\" class=\"ChapterContent_verse__57FIw\">", chaptCode, i);
+                        string verseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i);//verse identifyer
                         if (line.IndexOf(verseSpan) == -1)
                         {
-                            numberOfchecks++;
+                            //numberOfchecks++;
                             Debug.Log(verseSpan);
                             continue; //next chapter doesnt exsist
                         }
+                        else
+                        {
+                            int index = line.IndexOf(verseSpan);
 
-                        if (i != 0) { verse += " "; } // add space inbetween each verse
-                        verse += HTMLToText(line.Split(verseSpan)[0]);
+                            if (index < 0) index = 0;
+                            versesAdded.Add(HTMLToText(line.Split(verseSpan)[1]));
+                        }
                     }
 
-                    if (numberOfchecks == 5) { break; } //stop check paragraphs if there is no more matches
+                    if (numberOfchecks == max) { break; } //stop check paragraphs if there is no more matches
                 }
-
-                m_Text.text = verse;
+                //Debug.Log(RemoveDuplicates(versesAdded));
+                m_Text.text = RemoveDuplicates(versesAdded);
                 //Debug.Log(verse);
             }
 
             //// Or retrieve results as binary data
             //byte[] results = www.downloadHandler.data;
         }
+    }
+    string RemoveDuplicates(List<string> versesAdded)
+    {
+        var output = new StringBuilder();
+
+        for (int i = 0; i < versesAdded.Count; i++)
+        {
+            string line = versesAdded[i];
+            Debug.Log(line);
+            string nextLine = versesAdded[Math.Clamp(i + 1, 0, versesAdded.Count - 1)];
+            if(nextLine.IndexOf(line) == -1)
+            {
+                output.AppendJoin(" ", line);
+            }
+        }
+
+        return output.ToString();
     }
 
     public string HTMLToText(string HTMLCode)
