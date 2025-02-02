@@ -82,14 +82,18 @@ public class Test : MonoBehaviour
                 List<string> versesAdded = new();
                 int max = 10;
 
-                foreach (string line in lines)
-                {
-                    int numberOfchecks = 0;
+                
+                
+                //int numberOfchecks = 0;
 
-                    for (int i = 0; i < max; i++) // next 4 verses
+                for (int i = 0; i < max; i++) // next 4 verses
+                {
+                    foreach (string line in lines)
                     {
+
                         string verseSpan = String.Format("<span data-usfm=\"{0}.{1}\" class=\"ChapterContent_verse__57FIw\">", chaptCode, i);
-                        string verseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i);//verse identifyer
+                        string verseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i);//verse identifyer 
+                        string nextVerseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i + 1);//verse identifyer 
                         if (line.IndexOf(verseSpan) == -1)
                         {
                             //numberOfchecks++;
@@ -98,15 +102,30 @@ public class Test : MonoBehaviour
                         }
                         else
                         {
-                            int index = line.IndexOf(verseSpan);
+                            int NextVerseindex = line.Substring(line.IndexOf(verseSpan)).IndexOf(nextVerseSpanLable);
+                            int CurrentVerseindex = line.Substring(line.IndexOf(verseSpan)).IndexOf(verseSpanLable);
 
-                            if (index < 0) index = 0;
-                            versesAdded.Add(HTMLToText(line.Split(verseSpan)[1]));
+                            Debug.Log("Current verse index = " + CurrentVerseindex + " Next verse index = " + NextVerseindex);
+
+                            if(CurrentVerseindex < 0) { continue; }
+
+                            if (NextVerseindex > 0)
+                            {
+                                var txt = line.Substring(line.IndexOf(verseSpan));
+                                versesAdded.Add(HTMLToText(txt.Substring(CurrentVerseindex, NextVerseindex - CurrentVerseindex)));
+                            }
+                            else
+                            {
+                                var txt = line.Substring(line.IndexOf(verseSpan));
+                                versesAdded.Add(HTMLToText(txt.Substring(CurrentVerseindex)));
+                            }
+
                         }
                     }
-
-                    if (numberOfchecks == max) { break; } //stop check paragraphs if there is no more matches
                 }
+
+                    //if (numberOfchecks == max) { break; } //stop check paragraphs if there is no more matches
+                
                 //Debug.Log(RemoveDuplicates(versesAdded));
                 m_Text.text = RemoveDuplicates(versesAdded);
                 //Debug.Log(verse);
@@ -125,10 +144,10 @@ public class Test : MonoBehaviour
             string line = versesAdded[i];
             Debug.Log(line);
             string nextLine = versesAdded[Math.Clamp(i + 1, 0, versesAdded.Count - 1)];
-            if(nextLine.IndexOf(line) == -1)
-            {
+            //if(nextLine.IndexOf(line) == -1)
+            //{
                 output.AppendJoin(" ", line);
-            }
+            //}
         }
 
         return output.ToString();
