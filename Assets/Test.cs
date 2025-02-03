@@ -5,8 +5,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
 using TetraCreations.Attributes;
 using TMPro;
@@ -17,7 +15,7 @@ public class Test : MonoBehaviour
 {
     [SerializeField] TMP_Text m_Text;
 
-    async Task GetDocumentAsync()
+    async Awaitable GetDocumentAsync()
     {
         using (var client = new HttpClient())
         {
@@ -82,9 +80,6 @@ public class Test : MonoBehaviour
                 List<string> versesAdded = new();
                 int max = 10;
 
-                
-                
-                //int numberOfchecks = 0;
 
                 for (int i = 0; i < max; i++) // next 4 verses
                 {
@@ -130,9 +125,6 @@ public class Test : MonoBehaviour
                 m_Text.text = RemoveDuplicates(versesAdded);
                 //Debug.Log(verse);
             }
-
-            //// Or retrieve results as binary data
-            //byte[] results = www.downloadHandler.data;
         }
     }
     string RemoveDuplicates(List<string> versesAdded)
