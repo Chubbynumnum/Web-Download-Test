@@ -15,6 +15,12 @@ public class Test : MonoBehaviour
 {
     [SerializeField] TMP_Text m_Text;
 
+    [SerializeField] string Book;
+    
+    [SerializeField, Min(1)] int Chapter = 1;
+
+    [SerializeField, MinMaxSlider(1, 150)] Vector2Int verses;
+
     async Awaitable GetDocumentAsync()
     {
         using (var client = new HttpClient())
@@ -47,9 +53,9 @@ public class Test : MonoBehaviour
         }
     }
 
-    IEnumerator GetText()
+    IEnumerator GetText(string book, int chpt, Vector2Int ver)
     {
-        UnityWebRequest www = UnityWebRequest.Get("https://www.bible.com/bible/111/JHN.1.NIV");
+        UnityWebRequest www = UnityWebRequest.Get(String.Format("https://www.bible.com/bible/111/{0}.{1}.NIV", book, chpt));
         yield return www.SendWebRequest();
 
         if (www.result != UnityWebRequest.Result.Success)
@@ -68,12 +74,12 @@ public class Test : MonoBehaviour
             string[] lines = code.Split(new[] { toBeSearched }, StringSplitOptions.None); // split chapter into paragraphs
             lines[^1] = lines[^1].Split(new[] { "</div>" }, StringSplitOptions.None)[0]; // remove last paragraph as that is bottom of website stuff
 
-            string chaptCode = "JHN.1";// the code of the chapter we a searching
+            string chaptCode = String.Format("{0}.{1}", book, chpt);// the code of the chapter we a searching
             List<string> versesAdded = new(); // lsit of all the verses
-            int max = 10; // how many verses to get (always one less than the number you put NOTE: i should change this)
+            int max = ver.y; // how many verses to get (always one less than the number you put NOTE: i should change this)
 
 
-            for (int i = 0; i < max; i++) // loop to check for all the verses we want
+            for (int i = ver.x; i < max; i++) // loop to check for all the verses we want
             {
                 foreach (string line in lines)
                 {
@@ -227,7 +233,7 @@ public class Test : MonoBehaviour
     {
         if (m_Text != null) 
         {
-            _ = StartCoroutine(GetText());
+            _ = StartCoroutine(GetText(Book, Chapter, verses));
             _ = GetDocumentAsync();
         }
     }
