@@ -65,14 +65,12 @@ public class Test : MonoBehaviour
         else
         {
             //The string that indicates the start of the chapter and also the start of each paragraph (its kinda confusing the way the website works)
-            string toBeSearched = "<div class=\"ChapterContent_p__dVKHb\">";
+            string toBeSearched = String.Format("<div data-usfm=\"{0}.{1}\" class=\"ChapterContent_chapter__uvbXo\">", book, chpt);
             int ix = www.downloadHandler.text.IndexOf(toBeSearched);
             //if the string cant be found then break cus somthing went wrong
             if (ix == -1) { yield break; }
             //extract the chapter as HTML in a string
             string code = www.downloadHandler.text.Substring(ix + toBeSearched.Length);
-            string[] lines = code.Split(new[] { toBeSearched }, StringSplitOptions.None); // split chapter into paragraphs
-            lines[^1] = lines[^1].Split(new[] { "</div>" }, StringSplitOptions.None)[0]; // remove last paragraph as that is bottom of website stuff
 
             string chaptCode = String.Format("{0}.{1}", book, chpt);// the code of the chapter we a searching
             List<string> versesAdded = new(); // lsit of all the verses
@@ -81,58 +79,93 @@ public class Test : MonoBehaviour
 
             for (int i = ver.x; i < max; i++) // loop to check for all the verses we want
             {
-                foreach (string line in lines)
+                var line = code;
+                //Debug.Log(line);
+                //The string that indicates where paragraph that contains the verse (and other verse as well for some reason) start from
+                string verseSpan = String.Format("<span data-usfm=\"{0}.{1}\" class=\"ChapterContent_verse__57FIw\">", chaptCode, i);
+                //The string that indicates where the verse we are looking for starts from inside the paragraph of verses
+                string verseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i);//verse identifyer
+                //The string that indicates where the next verse starts from                                                                                                    //
+                string nextVerseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i + 1);//verse identifyer 
+
+                string CommentKey = "<span class=\"ChapterContent_note__YlDW0\">";//use to finde comments to remove 
+                string HeadingKey = "<span class=\"ChapterContent_heading__xBDcs\">";//use to finde headings to remove 
+                //The string that indicates where the actual text for a verse begins
+                string TextKey = "<span class=\"ChapterContent_content__RrUqA\">";//Class that holds text in a verse 
+
+                if (line.IndexOf(verseSpan) == -1) // if the paragraph couldnt be found
                 {
-                    //The string that indicates where paragraph that contains the verse (and other verse as well for some reason) start from
-                    string verseSpan = String.Format("<span data-usfm=\"{0}.{1}\" class=\"ChapterContent_verse__57FIw\">", chaptCode, i);
-                    //The string that indicates where the verse we are looking for starts from inside the paragraph of verses
-                    string verseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i);//verse identifyer
-                    //The string that indicates where the next verse starts from                                                                                                    //
-                    string nextVerseSpanLable = String.Format("<span class=\"ChapterContent_label__R2PLt\">{0}</span>", i + 1);//verse identifyer 
+                    //Debug.Log(verseSpan);
+                    continue; //next chapter doesnt exsist
+                }
+                else
+                {
+                    //The index of where the verse we are looking for starts from inside the paragraph of verses
+                    int NextVerseindex = line.Substring(line.IndexOf(verseSpan)).IndexOf(nextVerseSpanLable);
+                    //The index that indicates where the next verse starts from
+                    int CurrentVerseindex = line.Substring(line.IndexOf(verseSpan)).IndexOf(verseSpanLable);
 
-                    string CommentKey = "<span class=\"ChapterContent_note__YlDW0\">";//use to finde comments to remove 
-                    //The string that indicates where the actual text for a verse begins
-                    string TextKey = "<span class=\"ChapterContent_content__RrUqA\">";//Class that holds text in a verse 
+                    Debug.Log("Current verse index = " + CurrentVerseindex + " Next verse index = " + NextVerseindex);
 
-                    if (line.IndexOf(verseSpan) == -1) // if the paragraph couldnt be found
+                    if(CurrentVerseindex < 0) { continue; }
+
+                    var txt = line.Substring(line.IndexOf(verseSpan)); // raw text with html that contains the required verse
+                    if (NextVerseindex > 0)
                     {
-                        Debug.Log(verseSpan);
-                        continue; //next chapter doesnt exsist
+                        // if there is a next verse the exstract the text up to the next verse. 
+                        string filtertVerse = txt.Substring(CurrentVerseindex, NextVerseindex - CurrentVerseindex); // raw html verse without other verses
+                        string verseNoHeadings = RemoveHeadings(filtertVerse, HeadingKey);
+                        string verseNoComments = RemoveComments(verseNoHeadings, CommentKey, TextKey);//html verse without comments
+                        versesAdded.Add(HTMLToText(verseNoComments));
                     }
                     else
                     {
-                        //The index of where the verse we are looking for starts from inside the paragraph of verses
-                        int NextVerseindex = line.Substring(line.IndexOf(verseSpan)).IndexOf(nextVerseSpanLable);
-                        //The index that indicates where the next verse starts from
-                        int CurrentVerseindex = line.Substring(line.IndexOf(verseSpan)).IndexOf(verseSpanLable);
-
-                        Debug.Log("Current verse index = " + CurrentVerseindex + " Next verse index = " + NextVerseindex);
-
-                        if(CurrentVerseindex < 0) { continue; }
-
-                        var txt = line.Substring(line.IndexOf(verseSpan)); // raw text with html that contains the required verse
-                        if (NextVerseindex > 0)
-                        {
-                            // if there is a next verse the exstract the text up to the next verse. 
-                            string filtertVerse = txt.Substring(CurrentVerseindex, NextVerseindex - CurrentVerseindex); // raw html verse without other verses
-                            string verseNoComments = RemoveComments(filtertVerse, CommentKey, TextKey);//html verse without comments
-                            versesAdded.Add(HTMLToText(verseNoComments));
-                        }
-                        else
-                        {
-                            // if there is no next verse then exstract the text to the end (This should be fine cuz the buttom of page stuff was removed)
-                            string filtertVerse = txt.Substring(CurrentVerseindex); // raw html verse without unessary tags
-                            string verseNoComments = RemoveComments(filtertVerse, CommentKey, TextKey);//html verse without comments
-                            versesAdded.Add(HTMLToText(verseNoComments));
-                        }
-
+                        // if there is no next verse then exstract the text to the end (This should be fine cuz the buttom of page stuff was removed)
+                        string filtertVerse = txt.Substring(CurrentVerseindex); // raw html verse without unessary tags
+                        string verseNoHeadings = RemoveHeadings(filtertVerse, HeadingKey);
+                        string verseNoComments = RemoveComments(verseNoHeadings, CommentKey, TextKey);//html verse without comments
+                        versesAdded.Add(HTMLToText(verseNoComments));
                     }
+
                 }
             }
             //print text to screen
             m_Text.text = RemoveDuplicates(versesAdded);  
         }
     }
+
+    /// <summary>
+    /// Remove Heading Text from HTML string
+    /// </summary>
+    /// <param name="filterdVerse">Raw HTML verse without other verses</param>
+    /// <param name="HeadingKey">The HTML span that contains the Headings</param>
+    /// <returns>A HTML string without Headings</returns>
+    string RemoveHeadings(string filterdVerse, string HeadingKey)
+    {
+        string EndKey = "</span>";
+
+        var startIndexes = filterdVerse.AllIndexesOf(HeadingKey);// find all heading start indexes
+        var builder = new StringBuilder(filterdVerse);
+        for (int i = startIndexes.Count - 1; i >= 0; i--)
+        {
+            int startInd = startIndexes[i];
+            int endInd = filterdVerse.IndexOf(EndKey, startInd);
+
+            if (startInd == -1 || endInd == -1) // if therse no comments 
+            {
+               continue; //return the verse
+            }
+
+            int dist = endInd - startInd; // how many characters to remove (Cant be 0)
+            if (dist < 0) { dist = 0; }
+
+            builder.Remove(startInd, dist);
+        }
+
+        return builder.ToString();
+    }
+
+
     /// <summary>
     /// Removes the part of the HTML that contains comments.
     /// </summary>
@@ -143,9 +176,15 @@ public class Test : MonoBehaviour
     string RemoveComments(string filterdVerse, string commentKey, string textKey)
     {
         int commentStartIndex = filterdVerse.IndexOf(commentKey);
-        int commentEndIndex = FindIndexAfter(textKey, commentKey, filterdVerse);
 
-        if(commentStartIndex == -1 || commentEndIndex == -1) // if therse no comments 
+        if (commentStartIndex == -1) // if therse no comments 
+        {
+            return filterdVerse; //return the verse
+        }
+
+        int commentEndIndex = filterdVerse.IndexOf(textKey, commentStartIndex)/*FindIndexAfter(textKey, commentKey, filterdVerse)*/;
+        
+        if(commentEndIndex == -1) // if therse no comments 
         {
             return filterdVerse; //return the verse
         }
@@ -153,22 +192,7 @@ public class Test : MonoBehaviour
         if (count < 0) { count = 0; }
         return filterdVerse.Remove(commentStartIndex, count);
     }
-    /// <summary>
-    /// Finds the index of the first instance a string after a specific string.
-    /// </summary>
-    /// <param name="findIndexOf">The string to find the index of</param>
-    /// <param name="searchAfter">The string that indicates where the search should start from</param>
-    /// <param name="searchIn">The string to search for the <paramref name="findIndexOf" /> string in</param>
-    /// <returns>The index of the string. Is -1 if not found</returns>
-    int FindIndexAfter(string findIndexOf, string searchAfter, string searchIn)
-    {
-        int searchAfterIndex = searchIn.IndexOf(searchAfter);
-        if(searchAfterIndex == -1) { return -1; }
-        string startRemoved = searchIn.Substring(searchAfterIndex);// only contains charaters after the searchAfterIndex
-        int ind = startRemoved.IndexOf(findIndexOf);
-        //add the indexes that were removed
-        return ind + searchAfterIndex;
-    }
+
     /// <summary>
     /// Combines a list of string together while removeing duplicates.
     /// (Technically just combines now)
