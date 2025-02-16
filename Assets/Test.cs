@@ -20,7 +20,7 @@ public class Test : MonoBehaviour
 
     IEnumerator GetText(string book, int chpt, Vector2Int ver)
     {
-        UnityWebRequest www = UnityWebRequest.Get(String.Format("https://www.bible.com/bible/111/{0}.{1}.NIV", book, chpt));
+        UnityWebRequest www = UnityWebRequest.Get(String.Format("https://www.bible.com/bible/1588/{0}.{1}.AMP", book, chpt));
         yield return www.SendWebRequest();
 
         if (www.result != UnityWebRequest.Result.Success)
