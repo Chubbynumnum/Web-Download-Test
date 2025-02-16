@@ -1,11 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using TetraCreations.Attributes;
 using TMPro;
 using UnityEngine;
@@ -15,43 +12,11 @@ public class Test : MonoBehaviour
 {
     [SerializeField] TMP_Text m_Text;
 
-    [SerializeField] string Book;
+    [SerializeField] Books Book;
     
     [SerializeField, Min(1)] int Chapter = 1;
 
     [SerializeField, MinMaxSlider(1, 150)] Vector2Int verses;
-
-    async Awaitable GetDocumentAsync()
-    {
-        using (var client = new HttpClient())
-        {
-            // We'll use the GetAsync method to send  
-            // a GET request to the specified URL 
-            var response = await client.GetAsync("https://www.bible.com/bible/111/JHN.1.NIV");
-
-            // If the response is successful, we'll 
-            // interpret the response as XML 
-            if (response.IsSuccessStatusCode)
-            {
-                var xml = await response.Content.ReadAsStringAsync();
-
-                // We can then use the LINQ to XML API to query the XML 
-                var doc = XDocument.Parse(xml);
-
-                var strings = doc.Descendants("main").SelectMany(x => x.Descendants("div")).ToList();
-
-                // Let's query the XML to get all of the <div> elements 
-                var titles = from el in doc.Descendants("div")
-                             select el.Value;
-
-                foreach (var title in strings) 
-                {
-                    Debug.Log("GetDocumentAsync");
-                    Debug.Log(title.ToString());
-                } 
-            }
-        }
-    }
 
     IEnumerator GetText(string book, int chpt, Vector2Int ver)
     {
@@ -60,7 +25,7 @@ public class Test : MonoBehaviour
 
         if (www.result != UnityWebRequest.Result.Success)
         {
-            Debug.Log(www.error);
+            m_Text.text = "NOT FOUND";
         }
         else
         {
@@ -68,7 +33,11 @@ public class Test : MonoBehaviour
             string toBeSearched = String.Format("<div data-usfm=\"{0}.{1}\" class=\"ChapterContent_chapter__uvbXo\">", book, chpt);
             int ix = www.downloadHandler.text.IndexOf(toBeSearched);
             //if the string cant be found then break cus somthing went wrong
-            if (ix == -1) { yield break; }
+            if (ix == -1) 
+            {
+                m_Text.text = "NOT FOUND";
+                yield break; 
+            }
             //extract the chapter as HTML in a string
             string code = www.downloadHandler.text.Substring(ix + toBeSearched.Length);
 
@@ -257,8 +226,7 @@ public class Test : MonoBehaviour
     {
         if (m_Text != null) 
         {
-            _ = StartCoroutine(GetText(Book, Chapter, verses));
-            _ = GetDocumentAsync();
+            _ = StartCoroutine(GetText(BookFinder.Find(Book), Chapter, verses));
         }
     }
 }
